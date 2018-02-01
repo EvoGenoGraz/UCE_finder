@@ -3,6 +3,10 @@ __Testing the script__
 
 ```bash
 bash$ python ../devel/find_UCEs.py
+```
+
+_OUTPUT_
+```bash
 
 Find UCE candidates in Mummer output
 version: v.1.0
@@ -29,8 +33,15 @@ usage: find_UCEs.py [-h] [--mummer_raw <FILE>] [--ref_fasta <FILE>]
 
 ```
 
+
+__Test the usage__
+
 ```bash
-python ../devel/find_UCEs.py -h
+bash$ python ../devel/find_UCEs.py -h
+```
+
+_OUTPUT_
+```bash
 usage: find_UCEs.py [-h] [--mummer_raw <FILE>] [--ref_fasta <FILE>]
                     [--que_fasta <FILE>] [--min_length <INT>]
                     [--max_merge_distance <INT>] [--unique_distance <INT>]
@@ -90,9 +101,14 @@ optional arguments:
 
 ```
 
-```bash
-python ../devel/find_UCEs.py --mummer test_data/LvSf80.out --ref_fasta test_data/Lvar_reduced.fasta --que_fasta test_data/Sfran_reduced.fasta --min_length 100 --max_merge_distance 40 --unique_distance 1000 --dist_from_end 10 --max_merge_distance_diff 5 --extend 500 --output_length_dists
+__Test run__
 
+```bash
+bash$ python ../devel/find_UCEs.py --mummer test_data/LvSf80.out --ref_fasta test_data/Lvar_reduced.fasta --que_fasta test_data/Sfran_reduced.fasta --min_length 100 --max_merge_distance 40 --unique_distance 1000 --dist_from_end 10 --max_merge_distance_diff 5 --extend 500 --output_length_dists
+```
+
+_OUTPUT_
+```bash
 LvSf80.out.tsv
 Total number of MUMMER matches: 1482
 Filter 'multiple query hits with identical start position on reference' removed 26 Mummer hits
