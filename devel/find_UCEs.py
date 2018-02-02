@@ -58,24 +58,27 @@ def get_ctg_lengths(fasta):
     return lengths
 
 
-def evaluate_dist_from_end(dist_from_edge, pos, mode, total_length=0):
+def evaluate_dist_from_end(dist_from_edge, pos, mode, contigid, total_length=0, candidate_length=0):
     
     import sys
     
     ok = True
     
-#    dist_from_edge = int(dist_from_edge)
-#    pos=int(p)
+#    print "Contig id: %s" %contigid
     if mode == 'start':
         if not pos >= (dist_from_edge): #if match is not far enough from the start of the sequence
             ok = False
         
     elif mode == 'end':
-     
-        if not total_length > 0:
-            sys.exit('need to know the length of the contig')
+#        print "Start position: %s" %pos
+#        print "Total length: %s" %total_length
+#        print "Candidate length: %s" %candidate_length
+        if not total_length > 0 or not candidate_length > 0:
+#        if not total > 0:
+            sys.exit('need to know the length of the candidate and the length of the contig')
             
-        if not (total_length-pos) >= dist_from_edge:
+        if not (total_length-(pos+candidate_length)) >= dist_from_edge:
+#        if not (total_length-(pos)) >= dist_from_edge:
             ok = False
         
     if ok:
@@ -275,7 +278,6 @@ if not args.que_fasta:
 	sys.exit("\n\nCan't work without a Query fasta file\n\n")
 
 
-### MAIN
 
 mummer_result = args.mummer_raw
 #Tab delimited file
@@ -303,7 +305,9 @@ max_diff = args.max_merge_distance_diff #maximum gap size difference between ref
 extension=args.extend
 minlength=args.min_length
 
+### MAIN
 ###########################################
+
 
 mummerlist = reformat_mummer(mummer_result)
 
@@ -378,24 +382,28 @@ print "Leaves us with %i hits to process" %total
 
 ##extract uniques
 #print "Number of contigs in dictionary before unique matches were removed: %s" %len(per_ref_ctg)
-#identify the matches 
+#identify the matches
+
 for ref_ctg_id in sorted(per_ref_ctg):
-#    print ref_ctg_id,len(per_ref_ctg[ref_ctg_id]),sorted(per_ref_ctg[ref_ctg_id])
+    temp = []
+
     if len(per_ref_ctg[ref_ctg_id]) == 1:
         ref_ctg_pos = per_ref_ctg[ref_ctg_id].keys()[0]
         temp = per_ref_ctg[ref_ctg_id][ref_ctg_pos][0]
-
+        matchid = ref_ctg_id+"|%s" %ref_ctg_pos
         
         #check if distance from ctg start is ok
 #        if not ref_ctg_pos >= (dist_from_edge): #if match is not far enough from the start of the sequence
-        start = evaluate_dist_from_end(dist_from_edge=dist_from_edge, pos=ref_ctg_pos, mode='start')
-        end = evaluate_dist_from_end(dist_from_edge=dist_from_edge, pos=ref_ctg_pos, mode='end', total_length=lengths[ref_ctg_id])
+        start = evaluate_dist_from_end(dist_from_edge=dist_from_edge, pos=ref_ctg_pos, mode='start', contigid=ref_ctg_id)
+        end = evaluate_dist_from_end(dist_from_edge=dist_from_edge, pos=ref_ctg_pos, mode='end', contigid=ref_ctg_id, 
+                                     total_length=lengths[ref_ctg_id], candidate_length=int(temp[2]))
+#        end = evaluate_dist_from_end(dist_from_edge=dist_from_edge, pos=ref_ctg_pos, mode='end', total_length=lengths[ref_ctg_id], contigid=ref_ctg_id)
+
         if not start or not end:
-#        if not evaluate_dist_from_end(dist_from_edge=dist_from_edge, pos=ref_ctg_pos, mode='start'):
-            temp.append('too-close')
 #            print "too close to edge - %s" %ref_ctg_id
-            del per_ref_ctg[ref_ctg_id]
-            continue
+            
+            binned['too-close'][matchid] = reformat_match(ref_id=ref_ctg_id, ref_start_pos=start, baselist=temp)
+            
             
         else: #move match to candidate status
             
@@ -408,10 +416,13 @@ for ref_ctg_id in sorted(per_ref_ctg):
                     
 #        print "%s\n" %candidates['singlematch'][matchid]
 
-        #remove match from original dictionary
+        #at this stage it was decided that it was a valid candidate or it was too close to the edge
+        #remove the reference contig id from the dictionary - we don't need to check it again   
         del per_ref_ctg[ref_ctg_id]
+#        print "SINGLE match - decision made\n"
 
-#    print "more than one - %s" %ref_ctg_id
+#    else:
+#        print "\nmore than one - %s" %ref_ctg_id
 
 
 #print "Number of contigs in dictionary after unique matches were removed: %s" %len(per_ref_ctg)
@@ -424,7 +435,7 @@ to_merge = {}
 #At this stage the per_ref_ctg dictionary contains exclusively reference contigs that had more than one match with the query, but none 
 #that started at the same position (see filter 'multiple query hits with identical start position on reference' above)
 
-
+print "\nIDENTIFY MATCHES in close proximity\n"
 
 for ref_ctg_id in sorted(per_ref_ctg):
     pos_list = sorted(per_ref_ctg[ref_ctg_id])
@@ -434,8 +445,9 @@ for ref_ctg_id in sorted(per_ref_ctg):
 
     for i in range(len(pos_list)-1):
 #        print per_ref_ctg[ref_ctg_id][pos_list[i]][0]
-        if len(per_ref_ctg[ref_ctg_id][pos_list[i]][0]) == 4:
-            if pos_list[i] >= (dist_from_edge):
+        if len(per_ref_ctg[ref_ctg_id][pos_list[i]][0]) == 4: #the list contains 4 elements only for the first position
+#            print "CHECK DISTANCE FROM START"
+            if evaluate_dist_from_end(dist_from_edge=dist_from_edge, pos=pos_list[i], mode='start', contigid=ref_ctg_id):
                 per_ref_ctg[ref_ctg_id][pos_list[i]][0].append('unique') #only if it's the first match on a contig ][pos_list[i]][0][4]
             else:
                 per_ref_ctg[ref_ctg_id][pos_list[i]][0].append('too-close')
@@ -520,13 +532,20 @@ for ref_ctg_id in sorted(per_ref_ctg):
     #output the decision for the last match on the contig
 #    print "[%i]: %i - %s" %(len(pos_list), pos_list[-1], per_ref_ctg[ref_ctg_id][pos_list[-1]][0]) 
     if per_ref_ctg[ref_ctg_id][pos_list[-1]][0][4] == 'unique':
-        matchid = ref_ctg_id+"|%s" %pos_list[-1]
-        temp = per_ref_ctg[ref_ctg_id][pos_list[-1]][0]
-#        print "sending to candidates -> %s" %matchid
+        #check distance from end
+#        print "CHECK DIST FROM END"
+#        print per_ref_ctg[ref_ctg_id][pos_list[-1]][0][2]
+        if evaluate_dist_from_end(dist_from_edge=dist_from_edge, pos=pos_list[-1], mode='end', total_length=lengths[ref_ctg_id], 
+                                  contigid=ref_ctg_id, candidate_length=int(per_ref_ctg[ref_ctg_id][pos_list[-1]][0][2])):
+                                  
+            matchid = ref_ctg_id+"|%s" %pos_list[-1]
+            temp = per_ref_ctg[ref_ctg_id][pos_list[-1]][0]
+#            print "sending to candidates -> %s" %matchid
 
-        candidates['unique'][matchid] = reformat_match(ref_id=ref_ctg_id, ref_start_pos=pos_list[-1], baselist=temp)            
-#        print "%s\n" %candidates['unique'][matchid]
-
+            candidates['unique'][matchid] = reformat_match(ref_id=ref_ctg_id, ref_start_pos=pos_list[-1], baselist=temp)            
+#            print "%s\n" %candidates['unique'][matchid]
+        else:
+            per_ref_ctg[ref_ctg_id][pos_list[-1]][0][4] = 'too-close'
 
 print "\nMERGING\n"
 
@@ -548,8 +567,10 @@ for mergers in sorted(to_merge):
     if len(list(set(query_ids))) == 1: #this is true if all query matches are on the same contig
 #        print "single queryID"
         pass
+        
     else:
 #        print "non unique query ctg"
+        
 #        print "\n"+mergers,to_merge[mergers]
         binned['irregular-merge'][mergers] = []
         for start2 in to_merge[mergers]:
@@ -561,25 +582,38 @@ for mergers in sorted(to_merge):
     for i in range(len(temp)-1):
 #        print temp[i]
         distance_ref = to_merge[mergers][i+1] - (to_merge[mergers][i] + int(temp[i][2]))
-#        print "REFERENCE DISTANCE: %i" %distance_ref
         distance_que = int(temp[i+1][1]) - (int(temp[i][1]) + int(temp[i][2]))
+#        print "REFERENCE DISTANCE: %i" %distance_ref
 #        print "QUERY DISTANCE: %i" %distance_que
 
 #        diff = distance_que-distance_ref
-	#calcuate absolute difference between distance of two adjacent matches on the reference and the query
-	diff = abs(distance_que-distance_ref)
+        diff = abs(distance_que-distance_ref)
 #        print "DIFF: %i\n" %diff
         
 #        if diff >= min_diff and diff <= max_diff:
-	if diff <= max_diff:
+
+        if diff <= max_diff:
             pass
         else:
 #            print "Diff conflict - diff = %i" %diff
-	    binned['merge-dist-diff'][mergers] = []
+            binned['merge-dist-diff'][mergers] = []
             for start2 in to_merge[mergers]:
-            	binned['merge-dist-diff'][mergers].append(reformat_match(ref_id=ctg_id, ref_start_pos=start2, baselist=per_ref_ctg[ctg_id][start2][0]))
+                binned['merge-dist-diff'][mergers].append(reformat_match(ref_id=ctg_id, ref_start_pos=start2, baselist=per_ref_ctg[ctg_id][start2][0]))
+
             ok = False
             break
+    
+    #So far so good now check if the end of the newly merged candidate is too close to the end of the contig
+    if not evaluate_dist_from_end(dist_from_edge=dist_from_edge, pos=to_merge[mergers][-1], mode='end', total_length=lengths[ctg_id], 
+                                  contigid=ctg_id, candidate_length=int(temp[-1][2])):
+        ok = False
+#        print mergers
+#        print "TOTAL LENGTH: %s" %lengths[ctg_id]
+#        print "CANDIDATE END: %s" %(to_merge[mergers][-1]+int(per_ref_ctg[ctg_id][to_merge[mergers][-1]][0][2]))
+        if not mergers in binned['too-close']:
+            binned['too-close'][mergers] = []
+        for start2 in to_merge[mergers]:
+            binned['too-close'][mergers].append(reformat_match(ref_id=ctg_id, ref_start_pos=start2, baselist=per_ref_ctg[ctg_id][start2][0]))
     
     if ok:
 #        print "GO MERGE"
@@ -607,11 +641,10 @@ for mergers in sorted(to_merge):
         candidates['merged'][mergers]['que']['id'] = query_ids[0].replace('_Reverse','')
 
 #    print candidates['merged'][mergers]
-        
 
-    
+
+
 ## Extract merged sequences from fasta
-
 
 #identify ref contigs for which I need to extract sequences
 merge_ref_ctgs = {}

@@ -114,13 +114,16 @@ Total number of MUMMER matches: 1482
 Filter 'multiple query hits with identical start position on reference' removed 26 Mummer hits
 Leaves us with 1456 hits to process
 
+IDENTIFY MATCHES in close proximity
+
+
 MERGING
 
 
 Length distributions for candidate groups:
 
-unique	153
-80 5
+unique	152
+80 4
 81 6
 82 5
 83 4
@@ -186,33 +189,33 @@ unique	153
 309 1
 392 1
 
-singlematch	1032
-80 73
-81 54
-82 44
+singlematch	1013
+80 68
+81 50
+82 43
 83 38
 84 32
 85 46
 86 43
-87 37
+87 36
 88 31
-89 35
+89 34
 90 24
 91 21
 92 25
 93 21
 94 18
 95 37
-96 25
+96 24
 97 19
 98 20
 99 12
 100 17
-101 24
+101 23
 102 15
 103 16
 104 12
-105 9
+105 8
 106 14
 107 16
 108 13
@@ -220,8 +223,8 @@ singlematch	1032
 110 9
 111 8
 112 9
-113 12
-114 6
+113 11
+114 5
 115 13
 116 7
 117 7
@@ -230,8 +233,8 @@ singlematch	1032
 120 4
 121 7
 122 5
-123 9
-124 5
+123 8
+124 4
 125 8
 126 5
 127 3
@@ -314,7 +317,7 @@ merged	29
 ### SUMMARY ###
 
 Candidates dropped:
-too-close	7
+too-close	42
 skip	180
 overlap-filter	6
 merge-dist-diff	1
@@ -322,11 +325,11 @@ position	11
 irregular-merge	1
 
 Candidates retained:
-unique	153
-singlematch	1032
+unique	152
+singlematch	1013
 merged	29
 _________________
-Grand TOTAL: 1214
+Grand TOTAL: 1194
 =================
 
 #### PRODUCING OUTPUT FILES ####
@@ -337,3 +340,6 @@ WRITING: Sfran_reduced.candidate_UCEs-minlength100.fasta
 WRITING: Lvar_reduced.candidate_UCEs-minlength100-extended500.fasta
 WRITING: Sfran_reduced.candidate_UCEs-minlength100-extended500.fasta
 ```
+
+__Result files can be found in `test_results/`__
+
